@@ -160,11 +160,15 @@ bool FindProcess() {
         return false;
     }
     
+    Log("    Found " + std::to_string(cPids) + " processes");
+    
     std::vector<DWORD> pids(cPids);
     if (!pVMMDLL_PidList(hVMM, pids.data(), &cPids)) {
         LogError("Failed to get process list");
         return false;
     }
+    
+    Log("    Scanning for Arc Raiders...");
     
     // Process info structure (simplified)
     struct VMMDLL_PROCESS_INFORMATION {
@@ -224,7 +228,9 @@ bool FindProcess() {
     } else {
         LogError("Arc Raiders process not found");
         LogError("Make sure the game is running on the Gaming PC");
-        Log("\n[INFO] Searching for processes containing: Pioneer, ArcRaiders, or Embark");
+        Log("\n[INFO] Searched " + std::to_string(cPids) + " processes");
+        Log("[INFO] Looking for: Pioneer, ArcRaiders, or Embark");
+        Log("[INFO] If game is running, try searching for PID 1960 manually");
     }
     
     return false;
