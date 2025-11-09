@@ -491,7 +491,7 @@ std::vector<GWorldCandidate> ScanForGWorld() {
             GWorldCandidate candidate;
             candidate.offset = (addr + i) - moduleBase;
             candidate.address = potentialPtr;
-            candidate.confidence = 0;  // Will validate later
+            candidate.score = 0;  // Will validate later
             candidates.push_back(candidate);
         }
     }
@@ -507,7 +507,7 @@ std::vector<GWorldCandidate> ScanForGWorld() {
     for (auto& candidate : candidates) {
         int score = SafeValidateUWorldStructure(candidate.address);
         if (score >= MIN_CONFIDENCE) {
-            candidate.confidence = score;
+            candidate.score = score;
             validCandidates.push_back(candidate);
         }
         validated++;
