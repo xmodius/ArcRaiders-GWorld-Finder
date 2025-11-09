@@ -345,36 +345,48 @@ bool IsValidPointer(uint64_t ptr) {
 }
 
 int ValidateUWorldStructure(uint64_t uWorldPtr) {
-    int score = 0;
-    
-    if (!IsValidPointer(uWorldPtr)) return 0;
-    score += 10;
-    
-    uint64_t persistentLevel = ReadUInt64(uWorldPtr + UWORLD_PERSISTENTLEVEL);
-    if (IsValidPointer(persistentLevel)) {
-        score += 20;
+    __try {
+        int score = 0;
         
-        uint64_t actorsArray = ReadUInt64(persistentLevel + ULEVEL_ACTORS);
-        uint32_t actorCount = ReadUInt32(persistentLevel + ULEVEL_ACTORCOUNT);
+        if (!IsValidPointer(uWorldPtr)) return 0;
+        score += 10;
         
-        if (IsValidPointer(actorsArray) && actorCount > 0 && actorCount < 100000) {
-            score += 25;
+        uint64_t persistentLevel = ReadUInt64(uWorldPtr + UWORLD_PERSISTENTLEVEL);
+        if (IsValidPointer(persistentLevel)) {
+            score += 20;
             
-            int validActors = 0;
-            for (int i = 0; i < std::min((int)actorCount, 5); i++) {
-                uint64_t actor = ReadUInt64(actorsArray + (i * 8));
-                if (IsValidPointer(actor)) validActors++;
+            uint64_t actorsArray = ReadUInt64(persistentLevel + ULEVEL_ACTORS);
+            uint32_t actorCount = ReadUInt32(persistentLevel + ULEVEL_ACTORCOUNT);
+            
+            if (IsValidPointer(actorsArray) && actorCount > 0 && actorCount < 100000) {
+                score += 25;
+                
+                int validActors = 0;
+                for (int i = 0; i < std::min((int)actorCount, 5); i++) {
+                    uint64_t actor = ReadUInt64(actorsArray + (i * 8));
+                    if (IsValidPointer(actor)) validActors++;
+                }
+                score += validActors * 5;
             }
-            score += validActors * 5;
         }
+        
+        uint64_t gameInstance = ReadUInt64(uWorldPtr + UWORLD_OWNINGGAMEINSTANCE);
+        if (IsValidPointer(gameInstance)) score += 15;
+        
+        uint64_t levels = ReadUInt64(uWorldPtr + UWORLD_LEVELS);
+        if (IsValidPointer(levels)) {
+            score += 10;
+            if (IsValidPointer(ReadUInt64(levels))) score += 10;
+        }
+        
+        uint64_t gameState = ReadUInt64(uWorldPtr + UWORLD_GAMESTATE);
+        if (IsValidPointer(gameState)) score += 10;
+        
+        return score;
     }
-    
-    if (IsValidPointer(ReadUInt64(uWorldPtr + UWORLD_OWNINGGAMEINSTANCE))) score += 15;
-    if (IsValidPointer(ReadUInt64(uWorldPtr + UWORLD_LEVELS))) score += 10;
-    if (IsValidPointer(ReadUInt64(ReadUInt64(uWorldPtr + UWORLD_LEVELS)))) score += 10;
-    if (IsValidPointer(ReadUInt64(uWorldPtr + UWORLD_GAMESTATE))) score += 10;
-    
-    return score;
+    __except(EXCEPTION_EXECUTE_HANDLER) {
+        return 0;  // Crashed during validation
+    }
 }
 
 std::vector<GWorldCandidate> ScanForGWorld() {
