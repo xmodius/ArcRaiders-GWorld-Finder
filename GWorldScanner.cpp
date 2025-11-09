@@ -186,6 +186,8 @@ bool FindProcess() {
     const QWORD VMMDLL_PROCESS_INFORMATION_MAGIC = 0xc0ffee663df9301eULL;
     const WORD VMMDLL_PROCESS_INFORMATION_VERSION = 7;
     
+    std::vector<std::string> gameProcesses;
+    
     for (DWORD pid : pids) {
         VMMDLL_PROCESS_INFORMATION procInfo = { 0 };
         procInfo.magic = VMMDLL_PROCESS_INFORMATION_MAGIC;
@@ -194,6 +196,15 @@ bool FindProcess() {
         
         if (pVMMDLL_ProcessGetInformation(hVMM, pid, &procInfo, &cbProcInfo)) {
             std::string procName = procInfo.szName;
+            
+            // Look for Arc Raiders related processes
+            if (procName.find("Pioneer") != std::string::npos ||
+                procName.find("ArcRaiders") != std::string::npos ||
+                procName.find("Embark") != std::string::npos) {
+                gameProcesses.push_back(procName + " (PID: " + std::to_string(pid) + ")");
+            }
+            
+            // Check for exact match first
             if (procName.find("PioneerGame") != std::string::npos) {
                 processId = pid;
                 Log("[SUCCESS] Found: " + procName + " (PID: " + std::to_string(processId) + ")");
@@ -202,8 +213,20 @@ bool FindProcess() {
         }
     }
     
-    LogError("Arc Raiders process not found");
-    LogError("Make sure the game is running on the Gaming PC");
+    // If not found, show potential matches
+    if (!gameProcesses.empty()) {
+        Log("\n[INFO] Found potential Arc Raiders processes:");
+        for (const auto& proc : gameProcesses) {
+            Log("    " + proc);
+        }
+        Log("\n[WARNING] None matched 'PioneerGame' - process name may have changed");
+        Log("[INFO] Please check Task Manager on Gaming PC for exact process name");
+    } else {
+        LogError("Arc Raiders process not found");
+        LogError("Make sure the game is running on the Gaming PC");
+        Log("\n[INFO] Searching for processes containing: Pioneer, ArcRaiders, or Embark");
+    }
+    
     return false;
 }
 
