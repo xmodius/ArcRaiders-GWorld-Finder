@@ -7,6 +7,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -310,7 +311,12 @@ bool GetModuleBase() {
             
             moduleBase = pMap->pMap[i].vaBase;
             Log("\n[SUCCESS] Found module: " + modName);
-            Log("[SUCCESS] Module base: 0x" + std::to_string(moduleBase));
+            
+            // Convert to hex properly
+            char hexBuf[32];
+            sprintf_s(hexBuf, "0x%llX", moduleBase);
+            Log("[SUCCESS] Module base: " + std::string(hexBuf));
+            
             pVMMDLL_MemFree(pModuleMap);
             return true;
         }
@@ -412,6 +418,15 @@ std::vector<GWorldCandidate> ScanForGWorld() {
         if (progress != lastProgress && progress % 5 == 0) {
             std::cout << "\r    Progress: " << progress << "%" << std::flush;
             lastProgress = progress;
+            
+            // Log progress to file in case of crash
+            std::ofstream progressFile("scan_progress.txt");
+            if (progressFile.is_open()) {
+                char hexAddr[32];
+                sprintf_s(hexAddr, "0x%llX", addr);
+                progressFile << "Progress: " << progress << "% at address " << hexAddr << std::endl;
+                progressFile.close();
+            }
         }
         
         DWORD bytesRead = 0;
