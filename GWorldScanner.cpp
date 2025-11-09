@@ -464,7 +464,13 @@ std::vector<GWorldCandidate> ScanForGWorld() {
             
             if (potentialPtr < 0x10000 || potentialPtr > 0x7FFFFFFFFFFF) continue;
             
-            int score = ValidateUWorldStructure(potentialPtr);
+            int score = 0;
+            __try {
+                score = ValidateUWorldStructure(potentialPtr);
+            }
+            __except(EXCEPTION_EXECUTE_HANDLER) {
+                continue;  // Skip this pointer if validation crashes
+            }
             
             if (score >= MIN_CONFIDENCE) {
                 GWorldCandidate candidate;
