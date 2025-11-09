@@ -444,6 +444,11 @@ std::vector<GWorldCandidate> ScanForGWorld() {
     int lastProgress = -1;
     
     for (uint64_t addr = scanStart; addr < scanEnd; addr += CHUNK_SIZE) {
+        // WORKAROUND: Skip problematic address range
+        if (addr >= 0x7FF7761F0000 && addr <= 0x7FF776200000) {
+            continue;
+        }
+        
         int progress = (int)(((addr - scanStart) * 100) / totalSize);
         if (progress != lastProgress && progress % 5 == 0) {
             std::cout << "\r    Progress: " << progress << "%" << std::flush;
