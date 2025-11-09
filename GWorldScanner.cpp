@@ -480,30 +480,44 @@ std::vector<GWorldCandidate> ScanForGWorld() {
         if (!pVMMDLL_MemReadEx(hVMM, processId, addr, buffer.data(), CHUNK_SIZE, &bytesRead, 0x0001)) {
             continue;
         }
-        
+               // Collect ALL potential pointers without validation
         for (size_t i = 0; i < bytesRead - 8; i += 8) {
             uint64_t potentialPtr = *(uint64_t*)(buffer.data() + i);
             
+            // Basic range check only - no memory reads!
             if (potentialPtr < 0x10000 || potentialPtr > 0x7FFFFFFFFFFF) continue;
             
-            int score = SafeValidateUWorldStructure(potentialPtr);
-            
-            if (score >= MIN_CONFIDENCE) {
-                GWorldCandidate candidate;
-                candidate.offset = (addr + i) - moduleBase;
-                candidate.address = addr + i;
-                candidate.score = score;
-                candidate.uWorldPtr = potentialPtr;
-                
-                uint64_t persistentLevel = ReadUInt64(potentialPtr + UWORLD_PERSISTENTLEVEL);
-                candidate.actorCount = IsValidPointer(persistentLevel) ? ReadUInt32(persistentLevel + ULEVEL_ACTORCOUNT) : 0;
-                
-                candidates.push_back(candidate);
-            }
+            // Store candidate for later validation
+            GWorldCandidate candidate;
+            candidate.offset = (addr + i) - moduleBase;
+            candidate.address = potentialPtr;
+            candidate.confidence = 0;  // Will validate later
+            candidates.push_back(candidate);
         }
     }
     
     std::cout << "\r    Progress: 100%     " << std::endl;
+    
+    // Now validate all candidates
+    Log("\n[INFO] Collected " + std::to_string(candidates.size()) + " potential pointers");
+    Log("[INFO] Validating candidates (this is safe)...");
+    
+    std::vector<GWorldCandidate> validCandidates;
+    int validated = 0;
+    for (auto& candidate : candidates) {
+        int score = SafeValidateUWorldStructure(candidate.address);
+        if (score >= MIN_CONFIDENCE) {
+            candidate.confidence = score;
+            validCandidates.push_back(candidate);
+        }
+        validated++;
+        if (validated % 1000 == 0) {
+            std::cout << "\r    Validated: " << validated << "/" << candidates.size() << std::flush;
+        }
+    }
+    std::cout << "\r    Validated: " << validated << "/" << candidates.size() << "     " << std::endl;
+    
+    candidates = validCandidates;
     
     std::sort(candidates.begin(), candidates.end(), 
         [](const GWorldCandidate& a, const GWorldCandidate& b) {
