@@ -78,9 +78,36 @@ void LogError(const std::string& msg) {
 bool LoadVmmDll() {
     Log("[*] Loading vmm.dll...");
     
-    hVmmDll = LoadLibraryA("vmm.dll");
+    // Try loading with full path
+    char exePath[MAX_PATH];
+    GetModuleFileNameA(NULL, exePath, MAX_PATH);
+    std::string exeDir = exePath;
+    size_t lastSlash = exeDir.find_last_of("\\");
+    if (lastSlash != std::string::npos) {
+        exeDir = exeDir.substr(0, lastSlash + 1);
+    }
+    std::string dllPath = exeDir + "vmm.dll";
+    
+    Log("    Trying: " + dllPath);
+    
+    // Set DLL directory to help with dependencies
+    SetDllDirectoryA(exeDir.c_str());
+    
+    hVmmDll = LoadLibraryA(dllPath.c_str());
     if (!hVmmDll) {
+        DWORD error = GetLastError();
         LogError("Failed to load vmm.dll");
+        LogError("Windows Error Code: " + std::to_string(error));
+        
+        if (error == 126) {
+            LogError("Error 126: The specified module could not be found");
+            LogError("This usually means a dependency DLL is missing");
+            LogError("Required: leechcore.dll, vcruntime140.dll, and VC++ Redistributable");
+        } else if (error == 193) {
+            LogError("Error 193: Not a valid Win32 application");
+            LogError("Make sure you're using the x64 version");
+        }
+        
         LogError("Make sure vmm.dll is in the same directory as this executable");
         return false;
     }
