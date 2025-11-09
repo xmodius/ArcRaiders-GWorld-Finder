@@ -281,10 +281,26 @@ bool GetModuleBase() {
     }
     
     VMMDLL_MAP_MODULE* pMap = (VMMDLL_MAP_MODULE*)pModuleMap;
+    Log("    Found " + std::to_string(pMap->cMap) + " modules");
+    
+    // List first few modules for debugging
+    Log("    Listing modules:");
+    for (DWORD i = 0; i < std::min((DWORD)10, pMap->cMap); i++) {
+        std::string modName = pMap->pMap[i].uszText;
+        Log("      [" + std::to_string(i) + "] " + modName);
+    }
+    
+    // Search for game module
     for (DWORD i = 0; i < pMap->cMap; i++) {
         std::string modName = pMap->pMap[i].uszText;
-        if (modName.find("PioneerGame") != std::string::npos) {
+        
+        // Try multiple patterns
+        if (modName.find("PioneerGame") != std::string::npos ||
+            modName.find("ArcRaiders") != std::string::npos ||
+            (i == 0 && modName.find(".exe") != std::string::npos)) {  // First .exe is usually the main module
+            
             moduleBase = pMap->pMap[i].vaBase;
+            Log("\n[SUCCESS] Found module: " + modName);
             Log("[SUCCESS] Module base: 0x" + std::to_string(moduleBase));
             pVMMDLL_MemFree(pModuleMap);
             return true;
@@ -293,6 +309,7 @@ bool GetModuleBase() {
     
     pVMMDLL_MemFree(pModuleMap);
     LogError("Module not found");
+    Log("[INFO] Searched " + std::to_string(pMap->cMap) + " modules");
     return false;
 }
 
