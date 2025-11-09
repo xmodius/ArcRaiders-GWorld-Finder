@@ -351,7 +351,6 @@ bool IsValidPointer(uint64_t ptr) {
 }
 
 int ValidateUWorldStructure(uint64_t uWorldPtr) {
-    __try {
         int score = 0;
         
         // Basic pointer validation - no memory reads
@@ -414,6 +413,12 @@ int ValidateUWorldStructure(uint64_t uWorldPtr) {
         }
         
         return score;
+}
+
+// SEH wrapper to catch crashes
+int SafeValidateUWorldStructure(uint64_t uWorldPtr) {
+    __try {
+        return ValidateUWorldStructure(uWorldPtr);
     }
     __except(EXCEPTION_EXECUTE_HANDLER) {
         return 0;  // Crashed during validation
@@ -464,13 +469,7 @@ std::vector<GWorldCandidate> ScanForGWorld() {
             
             if (potentialPtr < 0x10000 || potentialPtr > 0x7FFFFFFFFFFF) continue;
             
-            int score = 0;
-            __try {
-                score = ValidateUWorldStructure(potentialPtr);
-            }
-            __except(EXCEPTION_EXECUTE_HANDLER) {
-                continue;  // Skip this pointer if validation crashes
-            }
+            int score = SafeValidateUWorldStructure(potentialPtr);
             
             if (score >= MIN_CONFIDENCE) {
                 GWorldCandidate candidate;
