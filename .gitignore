@@ -1,0 +1,40 @@
+# Compiled executables
+*.exe
+
+# Object files
+*.obj
+*.o
+
+# DLL files (downloaded by setup)
+*.dll
+
+# Zip archives
+*.zip
+
+# Build logs
+build.log
+compile.log
+
+# Visual Studio files
+*.pdb
+*.ilk
+*.exp
+*.lib
+
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# IDE files
+.vs/
+.vscode/
+*.suo
+*.user
+*.sln
+*.vcxproj
+*.vcxproj.filters
