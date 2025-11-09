@@ -354,39 +354,64 @@ int ValidateUWorldStructure(uint64_t uWorldPtr) {
     __try {
         int score = 0;
         
-        if (!IsValidPointer(uWorldPtr)) return 0;
+        // Basic pointer validation - no memory reads
+        if (uWorldPtr < 0x10000 || uWorldPtr > 0x7FFFFFFFFFFF) return 0;
         score += 10;
         
-        uint64_t persistentLevel = ReadUInt64(uWorldPtr + UWORLD_PERSISTENTLEVEL);
-        if (IsValidPointer(persistentLevel)) {
+        // Read with error checking
+        DWORD bytesRead = 0;
+        uint64_t persistentLevel = 0;
+        if (!pVMMDLL_MemReadEx(hVMM, processId, uWorldPtr + UWORLD_PERSISTENTLEVEL, 
+                               (PBYTE)&persistentLevel, sizeof(uint64_t), &bytesRead, 0x0001) || 
+            bytesRead != sizeof(uint64_t)) {
+            return score;
+        }
+        
+        if (persistentLevel >= 0x10000 && persistentLevel <= 0x7FFFFFFFFFFF) {
             score += 20;
             
-            uint64_t actorsArray = ReadUInt64(persistentLevel + ULEVEL_ACTORS);
-            uint32_t actorCount = ReadUInt32(persistentLevel + ULEVEL_ACTORCOUNT);
+            // Read actors array pointer
+            uint64_t actorsArray = 0;
+            uint32_t actorCount = 0;
             
-            if (IsValidPointer(actorsArray) && actorCount > 0 && actorCount < 100000) {
-                score += 25;
+            if (pVMMDLL_MemReadEx(hVMM, processId, persistentLevel + ULEVEL_ACTORS,
+                                  (PBYTE)&actorsArray, sizeof(uint64_t), &bytesRead, 0x0001) &&
+                bytesRead == sizeof(uint64_t) &&
+                pVMMDLL_MemReadEx(hVMM, processId, persistentLevel + ULEVEL_ACTORCOUNT,
+                                  (PBYTE)&actorCount, sizeof(uint32_t), &bytesRead, 0x0001) &&
+                bytesRead == sizeof(uint32_t)) {
                 
-                int validActors = 0;
-                for (int i = 0; i < std::min((int)actorCount, 5); i++) {
-                    uint64_t actor = ReadUInt64(actorsArray + (i * 8));
-                    if (IsValidPointer(actor)) validActors++;
+                if (actorsArray >= 0x10000 && actorsArray <= 0x7FFFFFFFFFFF &&
+                    actorCount > 0 && actorCount < 100000) {
+                    score += 30;
                 }
-                score += validActors * 5;
             }
         }
         
-        uint64_t gameInstance = ReadUInt64(uWorldPtr + UWORLD_OWNINGGAMEINSTANCE);
-        if (IsValidPointer(gameInstance)) score += 15;
-        
-        uint64_t levels = ReadUInt64(uWorldPtr + UWORLD_LEVELS);
-        if (IsValidPointer(levels)) {
-            score += 10;
-            if (IsValidPointer(ReadUInt64(levels))) score += 10;
+        // Check other pointers without deep validation
+        uint64_t gameInstance = 0;
+        if (pVMMDLL_MemReadEx(hVMM, processId, uWorldPtr + UWORLD_OWNINGGAMEINSTANCE,
+                              (PBYTE)&gameInstance, sizeof(uint64_t), &bytesRead, 0x0001) &&
+            bytesRead == sizeof(uint64_t) &&
+            gameInstance >= 0x10000 && gameInstance <= 0x7FFFFFFFFFFF) {
+            score += 15;
         }
         
-        uint64_t gameState = ReadUInt64(uWorldPtr + UWORLD_GAMESTATE);
-        if (IsValidPointer(gameState)) score += 10;
+        uint64_t levels = 0;
+        if (pVMMDLL_MemReadEx(hVMM, processId, uWorldPtr + UWORLD_LEVELS,
+                              (PBYTE)&levels, sizeof(uint64_t), &bytesRead, 0x0001) &&
+            bytesRead == sizeof(uint64_t) &&
+            levels >= 0x10000 && levels <= 0x7FFFFFFFFFFF) {
+            score += 10;
+        }
+        
+        uint64_t gameState = 0;
+        if (pVMMDLL_MemReadEx(hVMM, processId, uWorldPtr + UWORLD_GAMESTATE,
+                              (PBYTE)&gameState, sizeof(uint64_t), &bytesRead, 0x0001) &&
+            bytesRead == sizeof(uint64_t) &&
+            gameState >= 0x10000 && gameState <= 0x7FFFFFFFFFFF) {
+            score += 10;
+        }
         
         return score;
     }
