@@ -4,6 +4,7 @@
  * Version: 2.0
  */
 
+#define NOMINMAX
 #include <windows.h>
 #include <iostream>
 #include <vector>
@@ -155,7 +156,7 @@ bool FindProcess() {
         QWORD paDTB_UserOpt;
     };
     
-    const DWORD VMMDLL_PROCESS_INFORMATION_MAGIC = 0xc0ffee663df9301e;
+    const QWORD VMMDLL_PROCESS_INFORMATION_MAGIC = 0xc0ffee663df9301eULL;
     const WORD VMMDLL_PROCESS_INFORMATION_VERSION = 7;
     
     for (DWORD pid : pids) {
