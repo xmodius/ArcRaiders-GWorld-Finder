@@ -97,9 +97,9 @@ if exist "GWorldScanner.exe" (
     echo.
     
     REM Check if it's actually x64
-    dumpbin /headers GWorldScanner.exe 2>nul | findstr /C:"machine (x64)" >nul
-    if %ERRORLEVEL% EQU 0 (
-        echo [OK] Verified: x64 (64-bit) executable
+    dumpbin /headers GWorldScanner.exe 2>nul | findstr /C:"machine" >nul
+    if !ERRORLEVEL! EQU 0 (
+        echo [OK] Verified: x64 64-bit executable
     ) else (
         echo [WARNING] Could not verify architecture
     )
