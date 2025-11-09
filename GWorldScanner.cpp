@@ -42,7 +42,7 @@ typedef void(*VMMDLL_MemFree_t)(PVOID pvMem);
 
 // Scanning parameters
 #define SCAN_RANGE_MB 100
-#define CHUNK_SIZE (2 * 1024 * 1024)
+#define CHUNK_SIZE (512 * 1024)  // Reduced from 2MB to 512KB
 #define MIN_CONFIDENCE 50
 
 struct GWorldCandidate {
