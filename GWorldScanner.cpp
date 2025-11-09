@@ -28,6 +28,10 @@ typedef BOOL(*VMMDLL_ProcessGetInformation_t)(VMM_HANDLE hVMM, DWORD dwPID, PVOI
 typedef BOOL(*VMMDLL_Map_GetModuleU_t)(VMM_HANDLE hVMM, DWORD dwPID, PVOID pModuleMap, DWORD flags);
 typedef BOOL(*VMMDLL_MemReadEx_t)(VMM_HANDLE hVMM, DWORD dwPID, QWORD qwA, PBYTE pb, DWORD cb, PDWORD pcbReadOpt, QWORD flags);
 typedef void(*VMMDLL_MemFree_t)(PVOID pvMem);
+typedef QWORD(*VMMDLL_ConfigSet_t)(VMM_HANDLE hVMM, QWORD fOption, QWORD qwValue);
+
+// Config options
+#define VMMDLL_OPT_CONFIG_TICK_PERIOD 0x40000001
 
 // Known offsets from comprehensive dumper
 #define GNAMES_OFFSET 0x7E97580
@@ -67,6 +71,7 @@ VMMDLL_ProcessGetInformation_t pVMMDLL_ProcessGetInformation = nullptr;
 VMMDLL_Map_GetModuleU_t pVMMDLL_Map_GetModuleU = nullptr;
 VMMDLL_MemReadEx_t pVMMDLL_MemReadEx = nullptr;
 VMMDLL_MemFree_t pVMMDLL_MemFree = nullptr;
+VMMDLL_ConfigSet_t pVMMDLL_ConfigSet = nullptr;
 
 void Log(const std::string& msg) {
     std::cout << msg << std::endl;
@@ -121,6 +126,7 @@ bool LoadVmmDll() {
     pVMMDLL_Map_GetModuleU = (VMMDLL_Map_GetModuleU_t)GetProcAddress(hVmmDll, "VMMDLL_Map_GetModuleU");
     pVMMDLL_MemReadEx = (VMMDLL_MemReadEx_t)GetProcAddress(hVmmDll, "VMMDLL_MemReadEx");
     pVMMDLL_MemFree = (VMMDLL_MemFree_t)GetProcAddress(hVmmDll, "VMMDLL_MemFree");
+    pVMMDLL_ConfigSet = (VMMDLL_ConfigSet_t)GetProcAddress(hVmmDll, "VMMDLL_ConfigSet");
 
     if (!pVMMDLL_Initialize || !pVMMDLL_Close || !pVMMDLL_PidList || 
         !pVMMDLL_ProcessGetInformation || !pVMMDLL_Map_GetModuleU || 
@@ -146,6 +152,12 @@ bool InitializeDMA() {
         LogError("  2. Drivers are installed");
         LogError("  3. Gaming PC is powered on");
         return false;
+    }
+    
+    // Disable automatic refresh to prevent scanning interruptions
+    if (pVMMDLL_ConfigSet) {
+        pVMMDLL_ConfigSet(hVMM, VMMDLL_OPT_CONFIG_TICK_PERIOD, 0xFFFFFFFF);
+        Log("[INFO] Disabled automatic refresh for stable scanning");
     }
     
     Log("[SUCCESS] DMA initialized");
