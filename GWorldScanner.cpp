@@ -7,10 +7,10 @@
 #define NOMINMAX
 #include <windows.h>
 #include <iostream>
-#include <vector>
 #include <string>
-#include <iomanip>
+#include <vector>
 #include <algorithm>
+#include <cstdint>
 
 // Forward declare to avoid header dependency issues
 typedef void* VMM_HANDLE;
@@ -226,11 +226,25 @@ bool FindProcess() {
         Log("\n[WARNING] None matched 'PioneerGame' - process name may have changed");
         Log("[INFO] Please check Task Manager on Gaming PC for exact process name");
     } else {
-        LogError("Arc Raiders process not found");
-        LogError("Make sure the game is running on the Gaming PC");
+        LogError("Arc Raiders process not found via name search");
         Log("\n[INFO] Searched " + std::to_string(cPids) + " processes");
-        Log("[INFO] Looking for: Pioneer, ArcRaiders, or Embark");
-        Log("[INFO] If game is running, try searching for PID 1960 manually");
+        Log("[INFO] ProcessGetInformation may have failed for all processes");
+        
+        // Try direct PID 1960 as fallback
+        Log("\n[INFO] Attempting fallback: Trying PID 1960 directly...");
+        
+        // Check if PID 1960 exists in the list
+        bool pidExists = std::find(pids.begin(), pids.end(), 1960) != pids.end();
+        
+        if (pidExists) {
+            Log("[SUCCESS] PID 1960 found in process list!");
+            Log("[INFO] Assuming this is PioneerGame.exe");
+            processId = 1960;
+            return true;
+        } else {
+            Log("[WARNING] PID 1960 not found in process list");
+            LogError("Make sure the game is running on the Gaming PC");
+        }
     }
     
     return false;
