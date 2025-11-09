@@ -253,16 +253,25 @@ bool FindProcess() {
 bool GetModuleBase() {
     Log("\n[3/4] Getting module base address...");
     
-    // Module map structure (simplified)
+    // Module map structure (correct for v5.16+)
     struct VMMDLL_MAP_MODULEENTRY {
         QWORD vaBase;
         QWORD vaEntry;
         DWORD cbImageSize;
         BOOL fWoW64;
-        CHAR uszText[32];
-        DWORD _Reserved1;
-        DWORD _Reserved2[6];
-        QWORD _Reserved3[2];
+        LPSTR uszText;          // Pointer to module name
+        DWORD _Reserved3;
+        DWORD _Reserved4;
+        LPSTR uszFullName;      // Pointer to full path
+        DWORD tp;
+        DWORD cbFileSizeRaw;
+        DWORD cSection;
+        DWORD cEAT;
+        DWORD cIAT;
+        DWORD _Reserved2;
+        QWORD _Reserved1[3];
+        PVOID pExDebugInfo;
+        PVOID pExVersionInfo;
     };
     
     struct VMMDLL_MAP_MODULE {
